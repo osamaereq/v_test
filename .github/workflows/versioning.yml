@@ -1,0 +1,57 @@
+name: Frappe App Versioning
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - develop
+      - main
+
+jobs:
+  bump_version:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: Install bump2version
+      run: pip install bump2version
+
+    - name: Determine bump type
+      id: set_bump_type
+      run: |
+        echo "BASE=${{ github.base_ref }}" >> $GITHUB_ENV
+        echo "HEAD=${{ github.head_ref }}" >> $GITHUB_ENV
+
+        if [[ "${{ github.base_ref }}" == "develop" ]]; then
+          if [[ "${{ github.head_ref }}" == feature/* ]]; then
+            echo "bump_type=major" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.head_ref }}" == fix/* ]]; then
+            echo "bump_type=minor" >> $GITHUB_OUTPUT
+          else
+            echo "bump_type=none" >> $GITHUB_OUTPUT
+          fi
+        elif [[ "${{ github.base_ref }}" == "main" && "${{ github.head_ref }}" == "develop" ]]; then
+          echo "bump_type=patch" >> $GITHUB_OUTPUT
+        else
+          echo "bump_type=none" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Perform version bump
+      if: steps.set_bump_type.outputs.bump_type != 'none'
+      run: |
+        bump2version ${{ steps.set_bump_type.outputs.bump_type }}
+
+    - name: Commit and push version bump
+      if: steps.set_bump_type.outputs.bump_type != 'none'
+      run: |
+        git config user.name "GitHub Actions"
+        git config user.email "github-actions@github.com"
+        git push --follow-tags
