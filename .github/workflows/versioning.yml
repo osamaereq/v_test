@@ -48,6 +48,12 @@ jobs:
       if: steps.set_bump_type.outputs.bump_type != 'none'
       run: |
         bump2version ${{ steps.set_bump_type.outputs.bump_type }}
+        
+    - name: Configure Git identity
+      if: steps.set_bump_type.outputs.bump_type != 'none'
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
 
     - name: Commit and push version bump
       if: steps.set_bump_type.outputs.bump_type != 'none'
