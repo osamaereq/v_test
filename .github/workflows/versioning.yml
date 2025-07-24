@@ -44,20 +44,19 @@ jobs:
           echo "bump_type=none" >> $GITHUB_OUTPUT
         fi
 
-    - name: Perform version bump
-      if: steps.set_bump_type.outputs.bump_type != 'none'
-      run: |
-        bump2version ${{ steps.set_bump_type.outputs.bump_type }}
-        
     - name: Configure Git identity
       if: steps.set_bump_type.outputs.bump_type != 'none'
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
 
-    - name: Commit and push version bump
+    - name: Perform version bump
       if: steps.set_bump_type.outputs.bump_type != 'none'
       run: |
-        git config user.name "GitHub Actions"
-        git config user.email "github-actions@github.com"
+        bump2version ${{ steps.set_bump_type.outputs.bump_type }}
+
+    - name: Push version bump and tag
+      if: steps.set_bump_type.outputs.bump_type != 'none'
+      run: |
         git push --follow-tags
+
